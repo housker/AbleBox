@@ -33,27 +33,3 @@ CREATE TABLE files (
   INDEX (is_folder),
   INDEX (is_public)
 );
-
-DROP TABLE IF EXISTS `collab`;
-
-CREATE TABLE collab (
-  id MEDIUMINT(8) UNSIGNED AUTO_INCREMENT,
-  file_id MEDIUMINT(8) UNSIGNED NOT NULL,
-  folder_id MEDIUMINT(8) UNSIGNED NOT NULL,
-  user_id MEDIUMINT(8) UNSIGNED NOT NULL,
-  PRIMARY KEY (id),
-  FOREIGN KEY (file_id) REFERENCES files(id),
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  INDEX (folder_id)
-);
-
-DROP TABLE IF EXISTS `pending_user_share`;
-
-CREATE TABLE pending_user_share (
-  id MEDIUMINT(8) UNSIGNED AUTO_INCREMENT,
-  email VARCHAR(200) NOT NULL,
-  file_id MEDIUMINT(8) UNSIGNED NOT NULL,
-  PRIMARY KEY (id),
-  FOREIGN KEY (file_id) REFERENCES files(id),
-  INDEX (email)
-);

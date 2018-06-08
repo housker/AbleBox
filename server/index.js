@@ -28,6 +28,7 @@ var s3 = new AWS.S3({
   apiVersion: S3_API_VER
 });
 
+
 var deleteObject = function(objectKey) {
   var params = {
     Bucket: ABLEBOX_BUCKET,
@@ -279,7 +280,6 @@ app.post('/delete', checkUser, function(req, res) {
   let userId = req.session.user;
   let folderId = req.session.folderId;
   let is_folder = req.body.is_folder;
-
   db.deleteFiles(userId, fileId, is_folder, function(err, result) {
     if (err) {
       res.status = 404;
@@ -356,24 +356,15 @@ app.get('/download', function(req, res, next) {
   });
 });
 
-// endpoint to handle sharing of files/folders. Share data inserted into
-// different tables depending on whether shared-to user is registered.
-app.post('/share', (req, res) => {
-  let cb = (err, result) => {
+app.get('/share', (req, res) => {
+  let fileId = req.query.id;
+  let permission = !req.query.is_public;
+
+  db.changeFilePermissions(fileId, permission, (err, result) => {
     if (err) {
       res.redirect(500, '/home');
     } else {
       res.status(201).end();
-    }
-  };
-
-  db.checkUserExists(req.body.email, (err, result) => {
-    if (err) {
-      res.status(500).end();
-    } else if (result.length) {
-      db.shareFileExistingUser(req.body.file, result[0].id, cb);
-    } else {
-      db.shareFilePendingUser(req.body.file, req.body.email, cb);
     }
   });
 });

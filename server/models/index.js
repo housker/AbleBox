@@ -20,7 +20,7 @@ const createUser = (user, cb) => {
 };
 
 const checkUserExists = (email, cb) => {
-  const query = 'SELECT email, id FROM users WHERE email = ?';
+  const query = 'SELECT email FROM users WHERE email = ?';
 
   db.connection.query(query, email, function(err, result, fields) {
     if (err) {
@@ -106,7 +106,7 @@ const getFiles = (folderId, userId, cb) => {
     }
   });
 };
-      
+
 const verifyFileExistenceAndPermissions = (folderId, userId, cb) => {
   const query = 'SELECT id FROM files WHERE id = ? AND id <> 0 AND (user_id = ? OR is_public = 1)';
   
@@ -133,6 +133,7 @@ const getKey = (id, cb) => {
 
 const searchFiles = (userId, keyword, cb) => {
   keyword = '%' + keyword + '%';
+
   const query = 'SELECT id, name, s3_objectId, is_public, created_on as lastModified, is_folder FROM files WHERE user_id = ? AND name LIKE ? ORDER BY is_folder DESC, name';
 
   db.connection.query(query, [userId, keyword], (err, result, fields) => {
@@ -145,7 +146,9 @@ const searchFiles = (userId, keyword, cb) => {
 };
 
 const searchPath = (userId, folderId, cb) => {
+
   const query = '(SELECT SF.folder_id, F.name FROM (SELECT folder_id FROM files WHERE user_id = ? AND id IN (SELECT folder_id FROM files WHERE user_id = ? AND id IN (SELECT folder_id FROM files WHERE user_id = ?  AND id = ? )) UNION (SELECT folder_id FROM files WHERE user_id = ? AND id IN (SELECT folder_id FROM files WHERE user_id = ?  AND id = ? )) UNION (SELECT folder_id FROM files WHERE user_id = ? AND id = ?)) AS SF LEFT JOIN files As F ON SF.folder_id = F.id)  UNION (SELECT id, name FROM files WHERE user_id = ? AND id = ? )';
+
   const data = [userId, userId, userId, folderId, userId, userId, folderId, userId, folderId, userId, folderId];
 
   db.connection.query(query, data, (err, result, fields) => {
@@ -157,15 +160,11 @@ const searchPath = (userId, folderId, cb) => {
   });
 }
 
-// data in this table is moved to collab once new user registers
-const shareFilePendingUser = (file, email, cb) => {
-  const query = 'INSERT INTO pending_user_share SET ?';
-  const values = {
-    file_id: file.id,
-    email: email
-  };
+const changeFilePermissions = (id, permission, cb) => {
 
-  db.connection.query(query, values, (err, result, fields) => {
+  let query = 'UPDATE files SET is_public = ? WHERE id = ?';
+
+  db.connection.query(query, [permission, id], (err, result, fields) => {
     if (err) {
       cb(err, null);
     } else {
@@ -174,23 +173,7 @@ const shareFilePendingUser = (file, email, cb) => {
   });
 };
 
-const shareFileExistingUser = (file, userId, cb) => {
-  const query = 'INSERT INTO collab SET ?';
-  const values = {
-    file_id: file.id,
-    folder_id: file.folder_id,
-    user_id: userId
-  };
-
-  db.connection.query(query, values, (err, result, fields) => {
-    if (err) {
-      cb(err, null);
-    } else {
-      cb(null, result);
-    }
-  });
-}
-
+exports.changeFilePermissions = changeFilePermissions;
 exports.checkUserExists = checkUserExists;
 exports.createFile = createFile;
 exports.createFolder = createFolder;
@@ -202,6 +185,4 @@ exports.searchFiles = searchFiles;
 exports.createFolder = createFolder;
 exports.getKey = getKey;
 exports.searchPath = searchPath;
-exports.shareFilePendingUser = shareFilePendingUser;
-exports.shareFileExistingUser = shareFileExistingUser;
 exports.verifyFileExistenceAndPermissions = verifyFileExistenceAndPermissions;
